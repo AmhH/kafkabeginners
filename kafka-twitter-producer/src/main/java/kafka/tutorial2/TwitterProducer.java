@@ -1,7 +1,6 @@
-package com.sni.kafka.tutorial2;
+package kafka.tutorial2;
 
 import com.google.common.collect.Lists;
-import com.sni.kafka.tutorial1.ProducerDemoKeys;
 import com.twitter.hbc.ClientBuilder;
 import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.Constants;
