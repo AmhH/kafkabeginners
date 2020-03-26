@@ -104,7 +104,7 @@ public class TwitterProducer {
         properties.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, Integer.toString(32*1024)); // 32 KB batch size
 
         // create the producer
-        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
+        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
         return producer;
     }
 
@@ -112,19 +112,19 @@ public class TwitterProducer {
 
 
         /** Declare the host you want to connect to, the endpoint, and authentication (basic auth or oauth) */
-        Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);
-        StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
+        Hosts hoseBirdHosts = new HttpHosts(Constants.STREAM_HOST);
+        StatusesFilterEndpoint hoseBirdEndpoint = new StatusesFilterEndpoint();
         // Optional: set up some followings and track terms
-        hosebirdEndpoint.trackTerms(terms);
+        hoseBirdEndpoint.trackTerms(terms);
 
         // These secrets should be read from a config file
         Authentication hosebirdAuth = new OAuth1(consumerKey, consumerSecret, token, secret);
 
         ClientBuilder builder = new ClientBuilder()
-                .name("Hosebird-Client-01")                              // optional: mainly for the logs
-                .hosts(hosebirdHosts)
+                .name("HoseBird-Client-01")                              // optional: mainly for the logs
+                .hosts(hoseBirdHosts)
                 .authentication(hosebirdAuth)
-                .endpoint(hosebirdEndpoint)
+                .endpoint(hoseBirdEndpoint)
                 .processor(new StringDelimitedProcessor(msgQueue));
 
         return builder.build();
