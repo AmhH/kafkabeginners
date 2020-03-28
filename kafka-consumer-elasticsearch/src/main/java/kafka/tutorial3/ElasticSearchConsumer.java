@@ -1,5 +1,6 @@
 package kafka.tutorial3;
 
+import com.google.gson.JsonParser;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -30,6 +31,7 @@ import java.util.Properties;
 public class ElasticSearchConsumer {
 
     private static Logger logger = LoggerFactory.getLogger(ElasticSearchConsumer.class);
+    private static JsonParser jsonParser = new JsonParser();
 
     public static RestHighLevelClient createClient(){
 
@@ -81,7 +83,7 @@ public class ElasticSearchConsumer {
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false"); // disable auto commit of offsets
-        properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "100"); // disable auto commit of offsets
+        properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10"); // disable auto commit of offsets
 
         // create consumer
         KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
@@ -99,22 +101,43 @@ public class ElasticSearchConsumer {
         KafkaConsumer<String, String> consumer = createConsumer("twitter_tweets");
         while(true){
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+            logger.info("Received " + records.count() + " records");
             for (ConsumerRecord<String, String> record : records) {
+                //Id creation 2 strategies
+                //1. Kafka generic ID
+                // String id = record.topic() + "_" + record.partition() + "_" + record.offset();
+                //2. twitter feed specific id
+                String id = extractIdFromTweet(record.value());
 
-                IndexRequest indexRequest = new IndexRequest("twitter", "tweets")
+                IndexRequest indexRequest = new IndexRequest("twitter", "tweets", id)
                         .source(record.value(), XContentType.JSON);
 
                 IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
-                String id = indexResponse.getId();
-                logger.info(id);
+
+                logger.info(indexResponse.getId());
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(10);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
+            logger.info("Committing offset ...");
+            consumer.commitSync();
+            logger.info("Offsets have been committed");
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
         //close the client gracefully
         //client.close();
+    }
+
+    private static String extractIdFromTweet(String tweet) {
+        return jsonParser.parse(tweet)
+                .getAsJsonObject()
+                .get("id_str")
+                .getAsString();
     }
 }
